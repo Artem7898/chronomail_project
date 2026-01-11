@@ -100,7 +100,7 @@
 - Виртуальное окружение (рекомендуется)
 
 ### Клонирование репозитория
-- git clone https://github.com/yourusername/chronomail.git
+- git clone https://github.com/Artem7898/chronomail.git
 cd chronomail
 ### Создание виртуального окружения
 - python -m venv venv
@@ -122,7 +122,7 @@ cd chronomail
 - python manage.py collectstatic
 ### Запуск сервера разработки
 - python manage.py runserver
-- 
+  
 ## 🏗️ Архитектура приложения
 
 ```mermaid
