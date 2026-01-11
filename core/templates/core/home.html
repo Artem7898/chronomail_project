@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChronoMail - Главная</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex flex-col">
+        <nav class="bg-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <a href="/" class="text-2xl font-bold text-indigo-600">ChronoMail</a>
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Главная</a>
+                            <a href="/create/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Создать капсулу</a>
+                            <a href="/capsules/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Мои капсулы</a>
+                            {% if user.is_staff %}
+                            <a href="/statistics/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Статистика</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        {% if user.is_authenticated %}
+                        <span class="text-gray-700 mr-4">Привет, {{ user.username }}!</span>
+                        <a href="/accounts/logout/" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">Выйти</a>
+                        {% else %}
+                        <a href="/accounts/login/" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">Войти</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-grow">
+            <div class="max-w-7xl mx-auto py-12 px-4">
+                <div class="text-center">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-6">Отправьте сообщение в будущее</h1>
+                    <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                        ChronoMail позволяет создавать зашифрованные временные капсулы,
+                        которые будут автоматически отправлены вашим близким в указанное вами время.
+                    </p>
+
+                    <div class="mb-12">
+                        <a href="/create/" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                            Создать первую капсулу
+                        </a>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="text-3xl mb-4">🔒</div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Полная конфиденциальность</h3>
+                        <p class="text-gray-600">Все сообщения шифруются перед сохранением. Только получатель сможет их прочитать.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="text-3xl mb-4">⏰</div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Точное время отправки</h3>
+                        <p class="text-gray-600">Выберите точную дату и время доставки вашего сообщения.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="text-3xl mb-4">📎</div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Вложения файлов</h3>
+                        <p class="text-gray-600">Добавляйте изображения, документы и другие файлы к вашим сообщениям.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-gray-800 text-white py-8">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p>&copy; 2024 ChronoMail. Все права защищены.</p>
+                <p class="mt-2 text-gray-400">Отправляйте воспоминания в будущее</p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

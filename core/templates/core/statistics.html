@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Статистика - ChronoMail{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-chart-line mr-2"></i>Статистика ChronoMail
+        </h1>
+        <p class="text-gray-600">Мониторинг производительности и использования системы</p>
+    </div>
+
+    <!-- Карточки с метриками -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Всего капсул</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ realtime_metrics.total_capsules|default:"0" }}</p>
+                </div>
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <i class="fas fa-archive text-blue-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">В ожидании</p>
+                    <p class="text-2xl font-bold text-yellow-600">{{ realtime_metrics.pending_capsules|default:"0" }}</p>
+                </div>
+                <div class="p-3 bg-yellow-100 rounded-lg">
+                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Отправлено сегодня</p>
+                    <p class="text-2xl font-bold text-green-600">{{ realtime_metrics.sent_today|default:"0" }}</p>
+                </div>
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <i class="fas fa-paper-plane text-green-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Успешность</p>
+                    <p class="text-2xl font-bold text-indigo-600">{{ dashboard_data.summary.success_rate|floatformat:1 }}%</p>
+                </div>
+                <div class="p-3 bg-indigo-100 rounded-lg">
+                    <i class="fas fa-chart-pie text-indigo-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- График -->
+    <div class="bg-white rounded-xl shadow p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Активность за последние 7 дней</h2>
+        <div class="h-96">
+            <canvas id="activityChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Дополнительная статистика -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Топ доменов получателей</h2>
+            <div class="space-y-3">
+                {% for domain in dashboard_data.top_domains|slice:":5" %}
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700">{{ domain.0|default:"Неизвестно" }}</span>
+                    <span class="font-bold text-gray-800">{{ domain.1 }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Производительность</h2>
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-gray-700">Среднее время обработки</span>
+                        <span class="font-bold text-gray-800">{{ realtime_metrics.avg_processing_time|floatformat:2 }} сек</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-gray-700">Создано сегодня</span>
+                        <span class="font-bold text-gray-800">{{ realtime_metrics.created_today|default:"0" }}</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-gray-700">Обновлено</span>
+                        <span class="font-bold text-gray-800">{{ realtime_metrics.last_updated|date:"H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // График активности
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    const chartData = {{ dashboard_data|safe }};
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: chartData.datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Автообновление каждые 30 секунд
+    setInterval(function() {
+        fetch('/api/statistics/?type=realtime')
+            .then(response => response.json())
+            .then(data => {
+                // Обновление карточек с метриками
+                document.querySelectorAll('[data-metric]').forEach(card => {
+                    const metric = card.getAttribute('data-metric');
+                    if (data[metric]) {
+                        card.querySelector('.metric-value').textContent = data[metric];
+                    }
+                });
+            });
+    }, 30000);
+</script>
+{% endblock %}

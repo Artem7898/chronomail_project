@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Массовое создание капсул - ChronoMail{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-users mr-2"></i>Массовое создание капсул
+        </h1>
+        <p class="text-gray-600">Создайте несколько капсул одновременно из CSV файла</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Левая колонка: Форма -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <form method="post" enctype="multipart/form-data" id="bulk-form">
+                    {% csrf_token %}
+
+                    <div class="space-y-6">
+                        <!-- CSV файл -->
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">
+                                <i class="fas fa-file-csv mr-2"></i>CSV файл
+                            </label>
+
+                            <div id="bulk-drop-zone"
+                                 class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                                <p class="text-gray-600 mb-2">Перетащите CSV файл сюда или нажмите для выбора</p>
+                                <p class="text-sm text-gray-500">Поддерживается CSV с колонками: email, date, и другие</p>
+                            </div>
+
+                            <input type="file" name="csv_file" id="bulk-file-input" accept=".csv" class="hidden">
+
+                            {% if form.csv_file.errors %}
+                            <div class="text-red-500 text-sm mt-1">
+                                {{ form.csv_file.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Шаблон или сообщение -->
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">
+                                <i class="fas fa-tasks mr-2"></i>Содержание капсул
+                            </label>
+
+                            <div class="space-y-4">
+                                <!-- Выбор шаблона -->
+                                <div>
+                                    {{ form.template.label_tag }}
+                                    {{ form.template }}
+                                </div>
+
+                                <div class="text-center text-gray-500">или</div>
+
+                                <!-- Общее сообщение -->
+                                <div>
+                                    {{ form.common_message.label_tag }}
+                                    {{ form.common_message }}
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        Используйте {{название_колонки}} для подстановки значений из CSV
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Дата отправки -->
+                        <div>
+                            {{ form.scheduled_date.label_tag }}
+                            {{ form.scheduled_date }}
+                            <p class="text-sm text-gray-500 mt-1">
+                                Если дата не указана в CSV, будет использована эта дата
+                            </p>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="flex justify-end space-x-4 pt-6 border-t">
+                            <a href="{% url 'capsule_list' %}" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                                <i class="fas fa-times mr-2"></i>Отмена
+                            </a>
+                            <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
+                                <i class="fas fa-play mr-2"></i>Создать капсулы
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Правая колонка: Превью -->
+        <div>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-eye mr-2"></i>Превью данных
+                </h3>
+
+                <div id="preview-info" class="text-sm text-gray-500 mb-4">
+                    Загрузите CSV файл для просмотра данных
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table id="preview-table" class="min-w-full text-sm">
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center py-4 text-gray-500">
+                                    Нет данных для отображения
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Прогресс бар -->
+                <div id="progress-container" class="mt-6 hidden">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700">Прогресс</span>
+                        <span id="progress-percent" class="text-sm font-medium text-gray-700">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="progress-text" class="text-sm text-gray-500 mt-2">Ожидание...</p>
+                </div>
+            </div>
+
+            <!-- Помощь -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <h4 class="font-bold text-blue-800 mb-2">
+                    <i class="fas fa-question-circle mr-2"></i>Формат CSV файла
+                </h4>
+                <ul class="text-blue-700 text-sm space-y-1">
+                    <li><strong>email</strong> - Email получателя (обязательно)</li>
+                    <li><strong>date</strong> - Дата отправки (YYYY-MM-DD HH:MM)</li>
+                    <li><strong>name</strong> - Имя получателя (для шаблонов)</li>
+                    <li><strong>message</strong> - Текст сообщения (если не используется шаблон)</li>
+                    <li>Любые другие колонки для использования в шаблонах</li>
+                </ul>
+
+                <div class="mt-4">
+                    <a href="{% static 'samples/capsules_template.csv' %}"
+                       class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm">
+                        <i class="fas fa-download mr-2"></i>Скачать пример CSV файла
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Библиотека для парсинга CSV -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script src="{% static 'core/js/bulk_upload.js' %}"></script>
+
+<script>
+    // Автоматическая валидация CSV
+    document.getElementById('bulk-form').addEventListener('submit', function(e) {
+        const fileInput = document.getElementById('bulk-file-input');
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            alert('Пожалуйста, выберите CSV файл');
+            return false;
+        }
+
+        // Показать индикатор загрузки
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Обработка...';
+            submitBtn.disabled = true;
+        }
+    });
+</script>
+{% endblock %}

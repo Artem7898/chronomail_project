@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создать капсулу - ChronoMail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl font-bold text-indigo-600">ChronoMail</a>
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Главная</a>
+                        <a href="/create/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Создать капсулу</a>
+                        <a href="/capsules/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Мои капсулы</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    {% if user.is_authenticated %}
+                    <span class="text-gray-700 mr-4">Привет, {{ user.username }}!</span>
+                    <a href="/accounts/logout/" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">Выйти</a>
+                    {% else %}
+                    <a href="/accounts/login/" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">Войти</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto py-8 px-4">
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-6">Создать новую капсулу времени</h1>
+            
+            {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                <div class="p-4 mb-4 rounded-md {% if message.tags == 'error' %}bg-red-50 text-red-700{% else %}bg-green-50 text-green-700{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="space-y-6">
+                    <!-- Email получателя -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Email получателя *
+                        </label>
+                        {{ form.recipient_email }}
+                        {% if form.recipient_email.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.recipient_email.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Дата отправки -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Дата и время отправки *
+                        </label>
+                        {{ form.scheduled_date }}
+                        {% if form.scheduled_date.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.scheduled_date.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Сообщение -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Ваше сообщение *
+                        </label>
+                        {{ form.message }}
+                        {% if form.message.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.message.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">
+                            Сообщение будет зашифровано и не будет видно даже администраторам системы.
+                        </p>
+                    </div>
+                    
+                    <!-- Вложения -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Вложения (необязательно)
+                        </label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                            {{ form.attachments }}
+                            <p class="mt-2 text-sm text-gray-500">
+                                Перетащите файлы сюда или нажмите для выбора. Поддерживаемые форматы: JPG, PNG, GIF, PDF, DOC, TXT, ZIP и другие.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопки -->
+                    <div class="flex justify-between pt-6">
+                        <a href="/" class="px-6 py-3 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Отмена
+                        </a>
+                        <button type="submit" class="px-6 py-3 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700">
+                            Запечатать капсулу
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm text-blue-700">
+                    <span class="font-medium">Важно:</span> После создания капсулы вы больше не сможете изменить её содержимое. 
+                    Убедитесь, что все данные введены правильно. Капсула будет автоматически отправлена в указанное время.
+                </p>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

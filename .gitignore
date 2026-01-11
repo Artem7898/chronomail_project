@@ -1,0 +1,160 @@
+# .gitignore for ChronoMail - Time Capsule Messenger
+
+# Общие правила для Python (General Python rules)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Виртуальное окружение (Virtual environment)
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Логи (Logs)
+*.log
+logs/
+
+# Базы данных (Database files)
+*.db
+*.sqlite3
+*.sqlite
+db.sqlite3
+
+# Файлы настроек (Configuration files)
+*.env
+*.ini
+*.cfg
+*.yml
+*.yaml
+config/
+settings/
+.env.local
+.env.development
+.env.production
+
+# Секретные ключи (Secret keys)
+secrets.py
+secret_key.txt
+
+# Статические файлы и медиа (Static and media files)
+/media/
+/staticfiles/
+/static/
+!static/.gitkeep
+!media/.gitkeep
+
+# Файлы операционных систем (OS generated files)
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Файлы редакторов (Editor files)
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Файлы тестов (Test files)
+coverage.xml
+*.cover
+.coverage
+.tox/
+.pytest_cache/
+
+# Файлы развертывания (Deployment files)
+.dockerignore
+Dockerfile
+docker-compose.yml
+*.tar.gz
+*.zip
+
+# Файлы документации (Documentation files)
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# Файлы сборки (Build files)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Файлы кэша (Cache files)
+.cache/
+.cache
+
+# Файлы временных загрузок (Temporary uploads)
+/tmp/
+/temp/
+.uploads/
+
+# Файлы миграций (Migrations) - НЕ ИГНОРИРУЕМ, но можно игнорировать конкретные, если нужно
+# (Migrations are versioned, so we don't ignore them by default)
+# /migrations/
+# /migrations/*.py
+# !/migrations/__init__.py
+
+# Файлы Sentry (Sentry files)
+.sentry
+
+# Файлы Celery (Celery files)
+celerybeat-schedule
+
+# Файлы PyCharm (PyCharm files)
+*.iml
+
+# Файлы Visual Studio Code (Visual Studio Code files)
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Файлы Windows (Windows files)
+[Bb]uild/
+[Ll]ogs/
+[Ss]cripts/
+[Pp]ackages/
+[Tt]emp/
+[Oo]bj/
+[Bb]in/
+[Oo]ut/
+*.[Rr]elease.*
+*.[Dd]ebug.*
+
+# Файлы macOS (macOS files)
+
+# Файлы Linux (Linux files)
+
+# Файлы проекта (Project specific files)
+.ropeproject
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Файлы профилирования (Profiling files)
+.prof
