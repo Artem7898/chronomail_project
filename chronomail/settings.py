@@ -29,12 +29,27 @@ create_directories()
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-your-secret-key-here-change-in-production')
 
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+# Определяем, находимся ли мы на Railway
+IS_RAILWAY = 'RAILWAY_ENVIRONMENT' in os.environ or 'RAILWAY_STATIC_URL' in os.environ
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true' and not IS_RAILWAY
 
-ALLOWED_HOSTS = os.getenv('https://chronomailproject-production.up.railway.app/', 'localhost,127.0.0.1').split(',')
+# ALLOWED_HOSTS для Railway и локальной разработки
+if IS_RAILWAY:
+    ALLOWED_HOSTS = ['*']  # На Railway разрешаем все хосты
+    CSRF_TRUSTED_ORIGINS = [
+        'https://chronomailproject-production.up.railway.app',
+        'https://*.railway.app',
+    ]
+else:
+    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+        'https://localhost',
+    ]
 
 # Настройки безопасности для продакшена
-if not DEBUG:
+if not DEBUG or IS_RAILWAY:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -49,14 +64,11 @@ else:
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
 
-# Trusted origins
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    'https://localhost',
+# Trusted origins (дополняем)
+CSRF_TRUSTED_ORIGINS.extend([
     'https://*.railway.app',
     'https://*.onrender.com',
-]
+])
 
 # Приложения
 INSTALLED_APPS = [
@@ -118,7 +130,7 @@ TEMPLATES = [
     },
 ]
 
-# Database
+# Database - Railway предоставляет DATABASE_URL
 DATABASE_URL = os.getenv('DATABASE_URL')
 if DATABASE_URL:
     DATABASES = {
@@ -126,6 +138,7 @@ if DATABASE_URL:
             default=DATABASE_URL,
             conn_max_age=600,
             conn_health_checks=True,
+            ssl_require=True,
         )
     }
 else:
@@ -165,7 +178,12 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Настройки WhiteNoise для Railway
+if IS_RAILWAY:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+else:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'
@@ -188,6 +206,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "https://chronomailproject-production.up.railway.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -272,7 +291,7 @@ CKEDITOR_CONFIGS = {
 
 # Sentry конфигурация
 SENTRY_DSN = os.getenv('SENTRY_DSN')
-if SENTRY_DSN and not DEBUG:
+if SENTRY_DSN and (not DEBUG or IS_RAILWAY):
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[
@@ -290,7 +309,7 @@ if SENTRY_DSN and not DEBUG:
         traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE', 0.1)),
         profiles_sample_rate=float(os.getenv('SENTRY_PROFILES_SAMPLE_RATE', 0.1)),
         send_default_pii=True,
-        environment=os.getenv('ENVIRONMENT', 'production'),
+        environment='railway' if IS_RAILWAY else os.getenv('ENVIRONMENT', 'development'),
         release=f"chronomail@{os.getenv('VERSION', '1.0.0')}",
         ignore_errors=[
             'django.http.response.Http404',
@@ -298,7 +317,7 @@ if SENTRY_DSN and not DEBUG:
         ]
     )
 
-# Logging configuration
+# Logging configuration - упрощенная версия без pythonjsonlogger
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -312,17 +331,13 @@ LOGGING = {
             'format': '{levelname} {message}',
             'style': '{',
         },
-        'json': {
-            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
-            'format': '%(asctime)s %(levelname)s %(name)s %(message)s'
-        },
     },
     
     'handlers': {
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
-            'formatter': 'simple' if DEBUG else 'json',
+            'formatter': 'simple',
         },
         'file': {
             'level': 'DEBUG' if DEBUG else 'INFO',
@@ -383,3 +398,19 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+# Для Railway - дополнительные настройки
+if IS_RAILWAY:
+    # Автоматически определяем домен Railway
+    RAILWAY_STATIC_URL = os.getenv('RAILWAY_STATIC_URL', '')
+    if RAILWAY_STATIC_URL:
+        STATIC_URL = RAILWAY_STATIC_URL + '/static/'
+    
+    # Увеличиваем максимальный размер файла для загрузки
+    DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+    
+    # Отключаем DEBUG на Railway
+    DEBUG = False
+    
+    # Настройки WhiteNoise для продакшена
+    WHITENOISE_MAX_AGE = 31536000  # 1 year
