@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=chronomail_dev
+      - POSTGRES_USER=chronomail_user
+      - POSTGRES_PASSWORD=chronomail_password
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+      - ./media:/app/media
+      - ./logs:/app/logs
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # Для debugpy
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://chronomail_user:chronomail_password@db:5432/chronomail_dev
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY=dev-secret-key
+      - ALLOWED_HOSTS=localhost,127.0.0.1,host.docker.internal
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:
