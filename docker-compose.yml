@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # PostgreSQL база данных
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=chronomail
+      - POSTGRES_USER=chronomail_user
+      - POSTGRES_PASSWORD=chronomail_password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chronomail_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis для кэширования и Celery
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Веб-приложение
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn chronomail.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2"
+    volumes:
+      - ./media:/app/media
+      - ./logs:/app/logs
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=False
+      - DATABASE_URL=postgres://chronomail_user:chronomail_password@db:5432/chronomail
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY=your-production-secret-key-change-this
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # Celery worker
+  celery_worker:
+    build: .
+    command: celery -A chronomail worker --loglevel=info --concurrency=4
+    volumes:
+      - ./media:/app/media
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=postgres://chronomail_user:chronomail_password@db:5432/chronomail
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY=your-production-secret-key-change-this
+    depends_on:
+      - redis
+      - db
+
+  # Celery beat для периодических задач
+  celery_beat:
+    build: .
+    command: celery -A chronomail beat --loglevel=info
+    volumes:
+      - ./media:/app/media
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=postgres://chronomail_user:chronomail_password@db:5432/chronomail
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY=your-production-secret-key-change-this
+    depends_on:
+      - redis
+      - db
+
+volumes:
+  postgres_data:
+  redis_data:
