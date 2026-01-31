@@ -1,0 +1,8 @@
+{
+  "build": {
+    "command": "pip install -r requirements.txt && python manage.py collectstatic --noinput"
+  },
+  "deploy": {
+    "start": "gunicorn chronomail.wsgi:application --bind 0.0.0.0:$PORT"
+  }
+}
