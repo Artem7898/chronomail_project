@@ -39,6 +39,9 @@ if IS_RAILWAY:
     CSRF_TRUSTED_ORIGINS = [
         'https://chronomailproject-production.up.railway.app',
         'https://*.railway.app',
+        'https://*.up.railway.app',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
     ]
 else:
     ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
@@ -96,7 +99,7 @@ INSTALLED_APPS = [
     'core',
 ]
 
-# Middleware
+# Middleware - УПРОЩЕННАЯ ВЕРСИЯ для отладки
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -105,11 +108,12 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django_otp.middleware.OTPMiddleware',
-    'two_factor.middleware.threadlocals.ThreadLocals',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'core.middleware.IPFilterMiddleware',
+    # Временно отключаем OTP и IP фильтр для отладки
+    # 'django_otp.middleware.OTPMiddleware',
+    # 'two_factor.middleware.threadlocals.ThreadLocals',
+    # 'core.middleware.IPFilterMiddleware',
 ]
 
 ROOT_URLCONF = 'chronomail.urls'
@@ -152,19 +156,19 @@ else:
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'name': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
-        'name': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
         'OPTIONS': {
             'min_length': 8,
         }
     },
     {
-        'name': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
     {
-        'name': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
 
@@ -178,6 +182,9 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+
+# Для favicon - добавляем статический файл
+# Создайте файл в static/favicon.ico или добавьте в STATICFILES_DIRS
 
 # Настройки WhiteNoise для Railway
 if IS_RAILWAY:
@@ -194,8 +201,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Настройки пользователя
 AUTH_USER_MODEL = 'core.CustomUser'
 
-# 2FA настройки
-TWO_FACTOR_PATCH_ADMIN = True
+# 2FA настройки - ОТКЛЮЧАЕМ для админки
+TWO_FACTOR_PATCH_ADMIN = False  # Отключаем 2FA в админке
 TWO_FACTOR_LOGIN_TIMEOUT = 300
 TWO_FACTOR_REMEMBER_COOKIE_AGE = 60*60*24*30
 TWO_FACTOR_QR_FACTORY = 'qrcode.image.pil.PilImage'
@@ -240,29 +247,13 @@ REST_FRAMEWORK = {
 FERNET_KEY = os.getenv('FERNET_KEY', 'your-fernet-key-here-change-in-production')
 
 # НАСТРОЙКИ БЕЗОПАСНОСТИ - ИСПРАВЛЕННЫЕ
-# Для Railway отключаем жесткую IP-фильтрацию, так как IP могут меняться
-if IS_RAILWAY:
-    # На Railway разрешаем все IP-адреса, но оставляем возможность фильтрации через переменные окружения
-    allowed_ips_env = os.getenv('ALLOWED_IPS', '')
-    if allowed_ips_env:
-        ALLOWED_IPS = [ip.strip() for ip in allowed_ips_env.split(',') if ip.strip()]
-    else:
-        ALLOWED_IPS = []  # Пустой список = разрешить все IP-адреса
-    
-    # Черный список для блокировки конкретных IP
-    blocked_ips_env = os.getenv('BLOCKED_IPS', '')
-    if blocked_ips_env:
-        BLOCKED_IPS = [ip.strip() for ip in blocked_ips_env.split(',') if ip.strip()]
-    else:
-        BLOCKED_IPS = []
-else:
-    # Для локальной разработки используем более строгие настройки
-    ALLOWED_IPS = [ip.strip() for ip in os.getenv('ALLOWED_IPS', '127.0.0.1,::1').split(',') if ip.strip()]
-    BLOCKED_IPS = [ip.strip() for ip in os.getenv('BLOCKED_IPS', '10.0.0.0/8,192.168.0.0/16').split(',') if ip.strip()]
+# Временно отключаем IP фильтрацию для отладки
+ALLOWED_IPS = []
+BLOCKED_IPS = []
 
 RATE_LIMIT = {
-    'requests': int(os.getenv('RATE_LIMIT_REQUESTS', 100)),
-    'period': int(os.getenv('RATE_LIMIT_PERIOD', 60)),
+    'requests': 1000,  # Увеличиваем лимит для отладки
+    'period': 60,
 }
 
 # Email settings
@@ -334,7 +325,7 @@ if SENTRY_DSN and (not DEBUG or IS_RAILWAY):
         ]
     )
 
-# Logging configuration - упрощенная версия без pythonjsonlogger
+# Logging configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -352,12 +343,12 @@ LOGGING = {
     
     'handlers': {
         'console': {
-            'level': 'INFO',
+            'level': 'DEBUG',  # Изменено на DEBUG для отладки
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
         'file': {
-            'level': 'DEBUG' if DEBUG else 'INFO',
+            'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR / 'logs/chronomail.log',
             'maxBytes': 1024*1024*10,  # 10 MB
@@ -382,17 +373,18 @@ LOGGING = {
         },
         'django.request': {
             'handlers': ['console', 'error_file'],
-            'level': 'ERROR',
+            'level': 'DEBUG',  # Изменено на DEBUG
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
             'propagate': False,
         },
         'core': {
             'handlers': ['console', 'file'],
-            'level': 'DEBUG' if DEBUG else 'INFO',
+            'level': 'DEBUG',
             'propagate': True,
-        },
-        '': {
-            'handlers': ['console'],
-            'level': 'WARNING',
         },
     },
 }
@@ -404,17 +396,6 @@ CACHES = {
         'LOCATION': 'unique-snowflake',
     }
 }
-
-# Redis для Celery (если используется)
-REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-
-# Celery configuration (опционально)
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
 
 # Для Railway - дополнительные настройки
 if IS_RAILWAY:
