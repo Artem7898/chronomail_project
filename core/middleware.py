@@ -76,15 +76,33 @@ class IPFilterMiddleware:
     def is_ip_allowed(self, ip):
         """Проверка IP в белом списке"""
         for allowed_ip in self.allowed_ips:
-            if ipaddress.ip_address(ip) in ipaddress.ip_network(allowed_ip):
-                return True
+            # Пропускаем пустые строки
+            if not allowed_ip or not allowed_ip.strip():
+                logger.warning(f"Пустой IP-адрес в ALLOWED_IPS: '{allowed_ip}'")
+                continue
+            
+            try:
+                if ipaddress.ip_address(ip) in ipaddress.ip_network(allowed_ip):
+                    return True
+            except ValueError as e:
+                logger.warning(f"Неверный формат IP-сети в ALLOWED_IPS: '{allowed_ip}', ошибка: {e}")
+                continue
         return False
 
     def is_ip_in_blacklist(self, ip):
         """Проверка IP в черном списке"""
         for blocked_ip in self.blocked_ips:
-            if ipaddress.ip_address(ip) in ipaddress.ip_network(blocked_ip):
-                return True
+            # Пропускаем пустые строки
+            if not blocked_ip or not blocked_ip.strip():
+                logger.warning(f"Пустой IP-адрес в BLOCKED_IPS: '{blocked_ip}'")
+                continue
+            
+            try:
+                if ipaddress.ip_address(ip) in ipaddress.ip_network(blocked_ip):
+                    return True
+            except ValueError as e:
+                logger.warning(f"Неверный формат IP-сети в BLOCKED_IPS: '{blocked_ip}', ошибка: {e}")
+                continue
         return False
 
     def check_rate_limit(self, ip, path):
