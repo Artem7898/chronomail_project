@@ -152,19 +152,19 @@ else:
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'name': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'name': 'django.contrib.auth.password_validation.MinimumLengthValidator',
         'OPTIONS': {
             'min_length': 8,
         }
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'name': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'name': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
 
@@ -239,9 +239,26 @@ REST_FRAMEWORK = {
 # Encryption key
 FERNET_KEY = os.getenv('FERNET_KEY', 'your-fernet-key-here-change-in-production')
 
-# Настройки безопасности
-BLOCKED_IPS = os.getenv('BLOCKED_IPS', '10.0.0.0/8,192.168.0.0/16').split(',')
-ALLOWED_IPS = os.getenv('ALLOWED_IPS', '').split(',')
+# НАСТРОЙКИ БЕЗОПАСНОСТИ - ИСПРАВЛЕННЫЕ
+# Для Railway отключаем жесткую IP-фильтрацию, так как IP могут меняться
+if IS_RAILWAY:
+    # На Railway разрешаем все IP-адреса, но оставляем возможность фильтрации через переменные окружения
+    allowed_ips_env = os.getenv('ALLOWED_IPS', '')
+    if allowed_ips_env:
+        ALLOWED_IPS = [ip.strip() for ip in allowed_ips_env.split(',') if ip.strip()]
+    else:
+        ALLOWED_IPS = []  # Пустой список = разрешить все IP-адреса
+    
+    # Черный список для блокировки конкретных IP
+    blocked_ips_env = os.getenv('BLOCKED_IPS', '')
+    if blocked_ips_env:
+        BLOCKED_IPS = [ip.strip() for ip in blocked_ips_env.split(',') if ip.strip()]
+    else:
+        BLOCKED_IPS = []
+else:
+    # Для локальной разработки используем более строгие настройки
+    ALLOWED_IPS = [ip.strip() for ip in os.getenv('ALLOWED_IPS', '127.0.0.1,::1').split(',') if ip.strip()]
+    BLOCKED_IPS = [ip.strip() for ip in os.getenv('BLOCKED_IPS', '10.0.0.0/8,192.168.0.0/16').split(',') if ip.strip()]
 
 RATE_LIMIT = {
     'requests': int(os.getenv('RATE_LIMIT_REQUESTS', 100)),
