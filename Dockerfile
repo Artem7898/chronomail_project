@@ -63,6 +63,9 @@ RUN useradd -m -u 1000 chronomail && \
     chown -R chronomail:chronomail /app
 USER chronomail
 
+# Команда запуска - запускаем миграции и затем Gunicorn
+CMD sh -c "python manage.py migrate && gunicorn chronomail.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 120 --access-logfile - --error-logfile -"
+
 # Создание необходимых директорий
 RUN mkdir -p /app/logs /app/media/attachments /app/media/uploads
 
